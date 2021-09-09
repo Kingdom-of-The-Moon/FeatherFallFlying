@@ -4,22 +4,18 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentTarget;
 import net.minecraft.enchantment.ProtectionEnchantment;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ArmorItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import org.moon.fefafly.Utils;
-import org.moon.fefafly.access.EnchantmentAccess;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Enchantment.class)
-public class EnchantmentMixin implements EnchantmentAccess {
+public class EnchantmentMixin {
 
     @Shadow @Mutable @Final public EnchantmentTarget type;
 
@@ -35,10 +31,5 @@ public class EnchantmentMixin implements EnchantmentAccess {
                 }
             }
         }
-    }
-
-    @Override
-    public void setTargetType(EnchantmentTarget targetType) {
-        this.type = targetType;
     }
 }

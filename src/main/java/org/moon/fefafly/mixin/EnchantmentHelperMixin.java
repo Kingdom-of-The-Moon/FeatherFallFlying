@@ -1,9 +1,7 @@
 package org.moon.fefafly.mixin;
 
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.EnchantmentTarget;
-import net.minecraft.enchantment.ProtectionEnchantment;
+import com.google.common.collect.Lists;
+import net.minecraft.enchantment.*;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.Item;
@@ -17,28 +15,62 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
+// Users beware: This mod isn't just a simple mixin to make feather falling work on helmets, oh no.
+// Minecraft's enchantment system is so BUSTED, so basically I had to make it really hacky to work.
+// *Hopefully* shouldn't cause many mod compatibility issues...
 @Mixin(EnchantmentHelper.class)
 public abstract class EnchantmentHelperMixin {
 
+    @Unique private static int isAcceptableItemFix$power;
+    @Unique private static ArrayList isAcceptableItemFix$list;
     @Unique private static Enchantment isAcceptableItemFix$enchantment;
+    @Unique private static ItemStack isAcceptableItemFix$itemStack;
 
+    @Redirect(method = "getPossibleEntries", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList()Ljava/util/ArrayList;"))
+    private static <E> ArrayList<E> stealLocalVariable() {
+        isAcceptableItemFix$list = Lists.newArrayList();
+        return isAcceptableItemFix$list;
+    }
+
+    // Steals the enchantment iterators return value
     @Redirect(method = "getPossibleEntries", at = @At(value = "INVOKE", target = "Ljava/util/Iterator;next()Ljava/lang/Object;"))
     private static <E>E stealLocalVariable(Iterator<Enchantment> iterator) {
         Enchantment next = iterator.next();
-        EnchantmentHelperMixin.isAcceptableItemFix$enchantment = next;
+        isAcceptableItemFix$enchantment = next;
         return (E) next;
     }
 
+    // Steals the ItemStack and power arguments
+    @Inject(method = "getPossibleEntries", at = @At(value = "HEAD"))
+    private static void getPossibleEntries(int power, ItemStack stack, boolean treasureAllowed, CallbackInfoReturnable<List<EnchantmentLevelEntry>> cir) {
+        isAcceptableItemFix$itemStack = stack;
+        isAcceptableItemFix$power = power;
+    }
+
+    // "Hacks" into isAcceptableItem, and makes it run *per enchantment* instead of *per enchantment TYPE*. Also injects my condition into it~
+    // @TODO Turn this into it's own api for other mods
     @Redirect(method = "getPossibleEntries", at = @At(value = "INVOKE", target = "Lnet/minecraft/enchantment/EnchantmentTarget;isAcceptableItem(Lnet/minecraft/item/Item;)Z"))
     private static boolean isAcceptableItemFix(EnchantmentTarget enchantmentTarget, Item item) {
-        boolean isFeatherHelmet = false;
-        if (Utils.isArmorType(item, EquipmentSlot.HEAD)) {
 
+        if (Utils.isArmorType(item, EquipmentSlot.HEAD)) {
+            if (isAcceptableItemFix$enchantment instanceof ProtectionEnchantment protectionEnchantment) {
+                if (protectionEnchantment.protectionType == ProtectionEnchantment.Type.FALL) {
+                    for(int i = isAcceptableItemFix$enchantment.getMaxLevel(); i > isAcceptableItemFix$enchantment.getMinLevel() - 1; --i) {
+                        if (isAcceptableItemFix$power >= isAcceptableItemFix$enchantment.getMinPower(i) && isAcceptableItemFix$power <= isAcceptableItemFix$enchantment.getMaxPower(i)) {
+                            System.out.println("Rolled!");
+                            isAcceptableItemFix$list.add(new EnchantmentLevelEntry(isAcceptableItemFix$enchantment, i));
+                            return true;
+                        }
+                    }
+                }
+            }
         }
 
-        return isFeatherHelmet || isAcceptableItemFix$enchantment.isAcceptableItem(item.getDefaultStack());
+        return isAcceptableItemFix$enchantment.isAcceptableItem(isAcceptableItemFix$itemStack);
     }
 
 
@@ -47,8 +79,8 @@ public abstract class EnchantmentHelperMixin {
 
     @Inject(method = "getProtectionAmount", at = @At("HEAD"))
     private static void getProtectionAmount(Iterable<ItemStack> equipment, DamageSource source, CallbackInfoReturnable<Integer> cir) {
-        EnchantmentHelperMixin.getProtectionAmount$equipment = equipment;
-        EnchantmentHelperMixin.getProtectionAmount$source = source;
+        getProtectionAmount$equipment = equipment;
+        getProtectionAmount$source = source;
     }
 
     @Redirect(method = "getProtectionAmount",
