@@ -12,17 +12,23 @@ public class FeatherFallFlyingEnchantmentModification implements ArmorEnchantmen
 
     @Override
     public boolean isApplicableTo(ItemStack stack, Optional<Integer> level) {
-        return stack.getItem() instanceof ArmorItem ? ((ArmorItem)stack.getItem()).getSlotType() == EquipmentSlot.HEAD : false;
+        return isHelmet(stack);
     }
 
     @Override
     public int getDamageReduction(ItemStack stack, DamageSource source, int level) {
-        if (source.equals(DamageSource.FLY_INTO_WALL)) {
-            return level * 3;
-        } else if (source.equals(DamageSource.FALL)) {
-            return level * -3;
+        if (isHelmet(stack)) {
+            if (source.equals(DamageSource.FLY_INTO_WALL)) {
+                return level * 3;
+            } else if (source.equals(DamageSource.FALL)) {
+                return level * -3;
+            }
         }
         return 0;
+    }
+
+    private static boolean isHelmet(ItemStack stack) {
+        return  stack.getItem() instanceof ArmorItem ? ((ArmorItem)stack.getItem()).getSlotType() == EquipmentSlot.HEAD : false;
     }
 
 }
