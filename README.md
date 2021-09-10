@@ -1,9 +1,7 @@
-# Fabric Example Mod
+# Feather Fall Flying
 
-## Setup
+## What does this mod do?
+Feather Fall Flying allows the Feather Falling enchantment to apply to helmets! When on a helmet, instead of reducing fall damage, it reduces kinetic damage (from elytras)!
 
-For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.
-
-## License
-
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+## Depencencies:
+[EnchantmentTweaker](https://github.com/Kingdom-of-Moon/EnchantmentTweaker/tree/1.17)
